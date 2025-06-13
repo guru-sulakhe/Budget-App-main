@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: rails-app
+  namespace: budget
+  labels:
+    project: budget-app
+    tier: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      project: budget-app
+      tier: web
+  template:
+    metadata:
+      labels:
+        project: budget-app
+        tier: web
+    spec:
+      containers:
+      - name: rails
+        image: guru1188/rails:v1.0
+        ports:
+        - containerPort: 3000
+        env:
+          - name: DATABASE_HOST
+            value: postgres
+          - name: DATABASE_NAME
+            value: Budgy_production
+          - name: DATABASE_USER
+            value: Budgy
+          - name: DATABASE_PASSWORD
+            value: <%= ENV["Budgy_DATABASE_PASSWORD"] %>
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: rail-service
+spec:
+  selector:
+  project: budget-app
+  tier: web
+ports:
+- protocol: TCP
+  port: 80
+  targetPort: 3000
+

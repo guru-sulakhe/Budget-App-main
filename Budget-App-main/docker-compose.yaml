@@ -1,0 +1,38 @@
+version: '3.9'
+name: budget-app-main
+networks:
+  default:
+    name: budget-app
+volumes:
+  db_data:
+services:
+  db:
+    image: postgres:15
+    volumes:
+      source: db
+      target: /var/lib/postgresql/data
+      type: volume
+    environment:
+      POSTGRES_USER: Budgy
+      POSTGRES_PASSWORD: <%= ENV["Budgy_DATABASE_PASSWORD"] %>
+      POSTGRES_DB: Budgy_production
+    ports:
+      - "5432:5432"
+  web:
+    image: guru1188/rails:v1.0
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b 0.0.0.0 -p 3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/myapp_development
+
+
+# to run the docker compose
+# $ docker compose up -d
+# to deletet the docker compose
+# $ docker compose down
+# Rails app should be running at http://localhost:3000, with PostgreSQL on port 5432.
+  

@@ -1,0 +1,83 @@
+# This is the headless service
+# Headless service is used for implementing of clustering service for mysql db.
+# which will helps in communication of the data from one node to other nodes of cluster
+apiVersion: v1
+kind: services
+metadata:
+  name: postgres-headless
+  namespace: budget
+spec:
+  clusterIP: None #For headless service clusterIP should be None
+  selector: #labels of the deployment
+    project: budget
+    tier: db
+  ports:
+  - protocol: TCP
+    port: 5432 #service-port
+    targetPort: 5432 #target-port
+
+---
+#Service is used to call a pod using the selector which consists of labels of the deploymentSet and runs pod in the mentioned ports
+apiVersion: v1
+kind: service
+metadata:
+  name: postgres
+  namespace: budget
+spec:
+  selector:
+    project: budget
+    tier: db
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetport: 5432
+    
+---
+# StatefulSet is used for for managing applications that need persistent storage or a stable, unique network identity
+# ensuring that each pod's identity and data are maintained across restarts and rescheduling.
+# StatefulSet remembers its data (state) even if moved around in a cluster.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-StatefulSet
+  namespace: budget
+spec:
+  serviceName: "postgres-headless" #headless-service name
+  replicas: 3 #this will create 3 pods
+  selector:
+    matchLabels:
+      app: postgres
+      tier: db
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: Budgy_production
+            - name: POSTGRES_USER
+              value: Budgy
+            - name: POSTGRES_PASSWORD
+              value: <%= ENV["Budgy_DATABASE_PASSWORD"] %>
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+  #PVC declaration
+  volumeClaimTemplates:
+  - metadata:
+  name: postgres
+  spec:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "budget-ebs-dynamic-sc" #storage-class name
+    resources:
+      requests:
+        storage: 1G
+
+
